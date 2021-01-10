@@ -365,13 +365,13 @@ async  def on_message(message):
 #############################################################################################################    
     
     
-# @bot.event 
-# async  def on_error(event , *args , **kwargs):
-#     with open("err.log" , 'a') as f:
-#         if event == "on_message":
-#             f.write(f"Unhandled message: {args[0]}\n")
-#         else:
-#             raise 
+@bot.event 
+async  def on_error(event , *args , **kwargs):
+    with open("err.log" , 'a') as f:
+        if event == "on_message":
+            f.write(f"Unhandled message: {args[0]}\n")
+        else:
+            raise 
   
 #############################################################################################################  
     
@@ -439,16 +439,16 @@ async def unban(ctx, * , member):
 
 #############################################################################################################
 
-# @bot.event
-# async  def on_command_error(ctx,error):
-#     try:
-#         if isinstance(error,commands.errors.CheckFailure):
-#                 await ctx.send("You dont have permission to do that! XD")
-#         elif isinstance(error , commands.CommandNotFound):
-#             await ctx.send("This command do not exist use `noah help` to see the commands available")
-#     except discord.errors.Forbidden:
-#         await ctx.send("Make sure I have the following permissions: `Manage Messages`, `Read Message History`, "
-#                        "`Add Reactions`, `Mute Members`")
+@bot.event
+async  def on_command_error(ctx,error):
+    try:
+        if isinstance(error,commands.errors.CheckFailure):
+                await ctx.send("You dont have permission to do that! XD")
+        elif isinstance(error , commands.CommandNotFound):
+            await ctx.send("This command do not exist use `noah help` to see the commands available")
+    except discord.errors.Forbidden:
+        await ctx.send("Make sure I have the following permissions: `Manage Messages`, `Read Message History`, "
+                       "`Add Reactions`, `Mute Members`")
 
 
 #############################################################################################################        
