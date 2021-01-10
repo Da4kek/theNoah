@@ -12,12 +12,19 @@ import mysql.connector
 import DiscordUtils
 import praw
 
+def get_prefix(client,message):
+    
+    with open("prefixes.json", "r") as f:
+        prefixes = json.load(f)
 
+    return prefixes[str(message.guild.id)]
+
+bot = commands.Bot(command_prefix = get_prefix)
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 PREFIX = os.getenv('DISCORD_PREFIX')
-bot = commands.Bot(command_prefix = "noah ")
+
 
 bot.remove_command("help")
 reddit = praw.Reddit(client_id = "5T3myV5BQSWmvQ",
@@ -26,9 +33,79 @@ reddit = praw.Reddit(client_id = "5T3myV5BQSWmvQ",
                      password = "Myindian@123",
                      user_agent = "NoahBot")
 
+os.chdir("C:\\Users\\anisr\\OneDrive\\Desktop\\NoahBot\\")
+def convert(time):
+    pos = ['s','m','h','d']
+    time_dict = {"s":1,"m":60,"h":3600,"d":3600*24}
+    unit = time[-1]
+    
+    if unit not in pos:
+        return -1
+    try:
+        val = int(time[:-1])
+    except:
+        return -2
+    return val * time_dict[unit]
+
+async def get_bank_data():
+    with open("mainbank.json",'r') as f:
+        users = json.load(f)
+    return users
+    
+
+
+async def open_account(user):
+    users = await get_bank_data()
+    if str(user.id) in users:
+        return False
+    else:
+        users[str(user.id)] = {}
+        users[str(user.id)]['wallet'] = 0
+        users[str(user.id)]['bank'] = 0
+        
+    with open("mainbank.json",'r+') as f:
+        json.dump(users,f)
+    return True
+
+
+
+#############################################################################################################
+
+@bot.event
+async def on_guild_join(guild):
+
+
+    with open("prefixes.json", "r") as f:
+        prefixes = json.load(f)
+
+    prefixes[str(guild.id)] = "noah"
+
+    with open("prefixes.json", "w") as f:
+        json.dump(prefixes,f)
+
+#############################################################################################################
+        
 @bot.command()
-async def meme(ctx):
-    subreddit = reddit.subreddit("memes")
+@commands.has_permissions(administrator = True)
+async def changeprefix(ctx, prefix):
+
+    with open("prefixes.json", "r") as f:
+        prefixes = json.load(f)
+
+    prefixes[str(ctx.guild.id)] = prefix
+
+    with open("prefixes.json", "w") as f:
+        json.dump(prefixes,f)    
+
+    await ctx.send(f"The prefix was changed to {prefix}")
+
+#############################################################################################################
+
+
+
+@bot.command()
+async def meme(ctx,subred = 'memes'):
+    subreddit = reddit.subreddit(subred)
     all_submission =[]
     
     top = subreddit.top(limit = 50)
@@ -41,10 +118,37 @@ async def meme(ctx):
     embed.set_image(url = url)
     await ctx.send(embed = embed)    
 
+#############################################################################################################
     
+@bot.command()
+async def subreddit(ctx,subred = None):
+    if(subred == None):
+        await ctx.send("Enter the subreddit's name and try again")
+    else:
     
+        subreddit = reddit.subreddit(subred)
+        all_submission =[]
+        
+        top = subreddit.top(limit = 50)
+        for submission in top:
+            all_submission.append(submission)
+        random_sub = random.choice(all_submission)
+        name = random_sub.title
+        url = random_sub.url
+        embed = discord.Embed(title = name)
+        embed.set_image(url = url)
+        await ctx.send(embed = embed)    
+
+#############################################################################################################        
+
+@bot.command()
+@commands.has_permissions(manage_channels =True)
+async def purge(ctx,amount = 5):
+    await ctx.channel.purge(limit = amount)
     
+filtered_words = ['fuck','FUCK','fck','sex','pussy','mf','motherfucker','bitch','ass','ASS','thefuck','wtf','WTF']
     
+#############################################################################################################    
 
 @bot.command()
 async def help(ctx):
@@ -79,19 +183,9 @@ async def help(ctx):
     await paginator.run(embeds)
 
 
-os.chdir("C:\\Users\\anisr\\OneDrive\\Desktop\\NoahBot\\")
-def convert(time):
-    pos = ['s','m','h','d']
-    time_dict = {"s":1,"m":60,"h":3600,"d":3600*24}
-    unit = time[-1]
-    
-    if unit not in pos:
-        return -1
-    try:
-        val = int(time[:-1])
-    except:
-        return -2
-    return val * time_dict[unit]
+
+
+#############################################################################################################
     
 @bot.command()
 @commands.has_permissions(manage_channels =True)
@@ -142,11 +236,13 @@ async def giveaway(ctx):
     
     winner = random.choice(users)
     await channel.send(f"Congratulations!! {winner.mention} won {prize}")
+
+#############################################################################################################
     
     
 @bot.command()
 @commands.has_permissions(manage_channels= True)
-async def reroll(ctx,channel : discord.TextChannel, id_ : int):
+async def reroll(ctx,channel : discord.TextChannel, id_ : int,prize:str):
     try: 
         new_msg = await channel.fetch_message(id_)
     except: 
@@ -157,6 +253,8 @@ async def reroll(ctx,channel : discord.TextChannel, id_ : int):
     
     winner = random.choice(users)
     await channel.send(f"Congratulations!! {winner.mention} won {prize}")
+
+#############################################################################################################
 
 @bot.command()
 async def balance(ctx):
@@ -169,19 +267,12 @@ async def balance(ctx):
     embed.add_field(name = "Wallet balance",value = wallet_amt)
     embed.add_field(name = "Bank balance",value = bank_amt)
     await ctx.send(embed = embed)
+    
+#############################################################################################################
 
-async def open_account(user):
-    users = await get_bank_data()
-    if str(user.id) in users:
-        return False
-    else:
-        users[str(user.id)] = {}
-        users[str(user.id)]['wallet'] = 0
-        users[str(user.id)]['bank'] = 0
-        
-    with open("mainbank.json",'r+') as f:
-        json.dump(users,f)
-    return True
+
+ 
+############################################################################################################# 
     
 @bot.command()
 async def beg(ctx):
@@ -195,38 +286,7 @@ async def beg(ctx):
     with open("mainbank.json",'w') as f:
         users = json.dump(users,f)
     
-    
-        
-async def get_bank_data():
-    with open("mainbank.json",'r') as f:
-        users = json.load(f)
-    return users
-    
-
-
-
-
-@bot.event
-async def on_guild_join(guild):
-    for channel in guild.text_channels:
-        if channel.permissions_for(guild.me).send_messages:
-            await channel.send("Hey, thanks for adding me!"
-                               "Type `noah help` to view all"
-                               "the commands.")
-            break
-
-
-@bot.command(aliases = ['L','l','link'])
-async def invite(ctx):
-    await ctx.send("**Invite Link**: https://discord.com/api/oauth2/authorize?client_id=796735541101854740&permissions=8&scope=bot")
-
-
-
-@bot.command(aliases = ['latency'])
-async def ping(ctx):
-    await ctx.send(f'{round(bot.latency * 1000)} ms')
-
-
+#############################################################################################################    
 @bot.event
 async def on_ready():
     for guild in bot.guilds:
@@ -250,7 +310,7 @@ async def change_presence():
 bot.loop.create_task(change_presence())
         
     
-    
+ #############################################################################################################   
     
     
 @bot.event
@@ -259,6 +319,8 @@ async  def on_member_join(member):
     await channel.send(f"Welcome {member}! to {member.guild.name}!!")
     await member.create_dm()
     await member.dm_channel.send(f"Hi {member.name}, welcome to the {bot.guild.name} server!!")
+    
+#############################################################################################################    
     
 @bot.event
 async  def on_message(message):
@@ -278,15 +340,40 @@ async  def on_message(message):
     responses = random.choice(sample_texts)
     if message.content == "lol" or message.content == "lmao":
         await message.channel.send(responses)
-    await bot.process_commands(message)
     
-@bot.event 
-async  def on_error(event , *args , **kwargs):
-    with open("err.log" , 'a') as f:
-        if event == "on_message":
-            f.write(f"Unhandled message: {args[0]}\n")
-        else:
-            raise 
+    for word in filtered_words:
+        if word in message.content  :
+            await message.delete()
+            await message.channel.send(f"Stop using that word again {message.author.mention}")
+            
+    try:
+        if message.mentions[0] == bot.user:
+
+            with open("prefixes.json", "r") as f:
+                prefixes = json.load(f)
+
+            pre = prefixes[str(message.guild.id)] 
+
+            await message.channel.send(f"My prefix for this server is {pre}")
+
+    except:
+        pass
+    
+    await bot.process_commands(message)
+        
+    
+#############################################################################################################    
+    
+    
+# @bot.event 
+# async  def on_error(event , *args , **kwargs):
+#     with open("err.log" , 'a') as f:
+#         if event == "on_message":
+#             f.write(f"Unhandled message: {args[0]}\n")
+#         else:
+#             raise 
+  
+#############################################################################################################  
     
 @bot.command(name = "roll",help = "rolls dice")
 async def roll(ctx, number_of_dice : int,number_of_sides:int):
@@ -294,6 +381,8 @@ async def roll(ctx, number_of_dice : int,number_of_sides:int):
             for _ in range(number_of_dice)
     ]
     await ctx.send(', '.join(dice))
+
+#############################################################################################################
         
 @bot.command()
 async def deletechannel(ctx,channel:discord.TextChannel):
@@ -306,6 +395,8 @@ async def deletechannel(ctx,channel:discord.TextChannel):
         await channel.delete()
     else:
         await ctx.send("you cannot delete a channel get perms noob!")
+
+#############################################################################################################
         
 @bot.command()
 async def createchannel(ctx , channel):
@@ -320,13 +411,17 @@ async def createchannel(ctx , channel):
     else:
         await ctx.send("you cannot create a channel get perms noob!")
 
+#############################################################################################################
 
 @bot.command()
 @commands.has_permissions(ban_members = True)
 async def ban(ctx,member: discord.Member ,*,reason = " No reason Provided just banned lol"):
     await ctx.send(member.name + f" has been banned for: `{reason}`")
+    await member.create_dm()
+    await member.dm_channel.send(f"You have been banned for `{reason}`")
     await member.ban(reason = reason)
         
+#############################################################################################################
     
 @bot.command()
 @commands.has_permissions(ban_members = True)
@@ -342,8 +437,7 @@ async def unban(ctx, * , member):
     await ctx.send(member+ " was not found! **disappeared??**")
     
 
-
-
+#############################################################################################################
 
 # @bot.event
 # async  def on_command_error(ctx,error):
@@ -355,7 +449,9 @@ async def unban(ctx, * , member):
 #     except discord.errors.Forbidden:
 #         await ctx.send("Make sure I have the following permissions: `Manage Messages`, `Read Message History`, "
 #                        "`Add Reactions`, `Mute Members`")
-        
+
+
+#############################################################################################################        
     
 @bot.command()
 async def wanted(ctx,user:discord.Member = None):
@@ -371,6 +467,8 @@ async def wanted(ctx,user:discord.Member = None):
     wanted.save("profile.jpg")
     
     await ctx.send(file = discord.File("profile.jpg"))
+
+#############################################################################################################
     
 @bot.command()
 async def slap(ctx,user:discord.Member = None):
@@ -396,6 +494,7 @@ async def slap(ctx,user:discord.Member = None):
         slap.save("profile.jpg")
         await ctx.send(file = discord.File("profile.jpg"))
         
+#############################################################################################################
 
 @bot.command()
 async def dead(ctx,user:discord.Member = None):
@@ -423,25 +522,18 @@ async def dead(ctx,user:discord.Member = None):
         
         slap.save("profile.jpg")
         await ctx.send(file = discord.File("profile.jpg"))
-        
-    
 
-    
-    
-
-    
-    
+#############################################################################################################
         
-            
 @bot.command()
 @commands.has_permissions(kick_members=True)
 async def kick(ctx, member : discord.Member, *, reason=None):
   await member.kick(reason=reason)
-        
+    
 
+    
+    
 
-
-
-
-
+    
+    
 bot.run(TOKEN)
