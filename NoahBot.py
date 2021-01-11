@@ -26,7 +26,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 PREFIX = os.getenv('DISCORD_PREFIX')
 
 
-bot.remove_command("help")
+bot.remove_command("help") 
 reddit = praw.Reddit(client_id = "5T3myV5BQSWmvQ",
                      client_secret = "j2NeTcoFNEYyV6hCp6erdk1h3cO7vQ",
                      username = "nocopyrights101",
@@ -34,6 +34,21 @@ reddit = praw.Reddit(client_id = "5T3myV5BQSWmvQ",
                      user_agent = "NoahBot")
 
 os.chdir("C:\\Users\\anisr\\OneDrive\\Desktop\\NoahBot\\")
+
+@bot.command()
+async def load(ctx,extension):
+    bot.load_extension(f'Cogs.{extension}')
+    ctx.channel.send("Cogs loaded")
+    
+@bot.command()
+async def unload(ctx,extension):
+    bot.unload_extension(f'Cogs.{extension}')
+    ctx.channel.send("Cogs unloaded")
+
+for filename in os.listdir("./Cogs"):
+    if filename.endswith(".py"):
+        bot.load_extension(f"Cogs.{filename[:-3]}")
+
 def convert(time):
     pos = ['s','m','h','d']
     time_dict = {"s":1,"m":60,"h":3600,"d":3600*24}
@@ -50,7 +65,7 @@ def convert(time):
 async def get_bank_data():
     with open("mainbank.json",'r') as f:
         users = json.load(f)
-    return users
+    return users 
     
 
 
@@ -150,109 +165,20 @@ filtered_words = ['fuck','FUCK','fck','sex','pussy','mf','motherfucker','bitch',
     
 #############################################################################################################    
 
-@bot.command()
-async def help(ctx):
-    embed1 = discord.Embed(color=ctx.author.color).add_field(name="**Moderations**",value = None)
-    embed1.add_field(name = 'createchannel',value = 'creates a channel for you')
-    embed1.add_field(name = 'deletechannel',value ='deletes a channel (give the name/id/mention the channel)')
-    embed1.add_field(name = 'kick',value = 'kicks the member whom you mention')
-    embed1.add_field(name = 'ban',value = 'bans the member whom you mention and wont allow him to join again unless unbanned')
-    embed1.add_field(name = 'unban',value = 'unbans the member(give me the username with the code of the banned member)')
-    embed1.add_field(name = 'automod',value = 'coming soon!')
-    
-    embed2 = discord.Embed(color=ctx.author.color).add_field(name="**Fun**",value = None)
-    embed2.add_field(name = 'slap',value = 'mention a member to slap')
-    embed2.add_field(name = 'dead',value = 'mention a member, and he is dead with your smile lol')
-    embed2.add_field(name = 'wanted',value = 'mention a member whom you wanted to see him most wanted')
-    embed2.add_field(name = 'roll',value='give me the sides and number of dices to use ;)')
-    
-    embed3 = discord.Embed(color=ctx.author.color).add_field(name="**Giveaway**",value = None)
-    embed3.add_field(name = 'giveaway',value = "start a giveaway with some basic questions (be legit!)")
-    
-    embed4 = discord.Embed(color=ctx.author.color).add_field(name="**economy**",value = None)
-    embed4.add_field(name='balance',value = 'to see how much do you have')
-    embed4.add_field(name = 'beg',value = 'beg to get noacoins')
-    embed4.add_field(name = 'shops',value = 'coming soon!')
-    paginator = DiscordUtils.Pagination.CustomEmbedPaginator(ctx, remove_reactions=True)
-    paginator.add_reaction('⏮️', "first")
-    paginator.add_reaction('⏪', "back")
-    paginator.add_reaction('🔐', "lock")
-    paginator.add_reaction('⏩', "next")
-    paginator.add_reaction('⏭️', "last")
-    embeds = [embed1, embed2, embed3,embed4]
-    await paginator.run(embeds)
+
+
 
 
 
 
 #############################################################################################################
     
-@bot.command()
-@commands.has_permissions(manage_channels =True)
-async def giveaway(ctx):
-    await ctx.send("Let's start with this giveaway! all you need to do is answer these questions within 15 secs!")
-    questions = ["**Which channel should the giveaway be hosted in?**",
-                 "**What should be the duration of the giveaway? (s|m|h|d)**",
-                 "**What is the prize of the giveaway??**"]
-    answers = []
-    def check(m):
-        return m.author == ctx.author and m.channel == ctx.channel
-    for i in questions:
-        await ctx.send(i)
-        try:
-            msg = await bot.wait_for("message",timeout = 15.0,check=check)
-        except asyncio.TimeoutError:
-            await ctx.send("`You didnt answer in 15 secs please try again!`")
-            return
-        else:
-            answers.append(msg.content)        
-    try:
-        c_id = int(answers[0][2:-1])
-    except:
-        await ctx.send(f"`mention the channel properly!. Try like this {ctx.channel.mention} next time.`")
-        return
-    channel = bot.get_channel(c_id)
-    time = convert(answers[1])
-    if time == -1:
-        await ctx.send(f"`you didnt answer the time with proper unit. use (s|m|h|d)`")
-        return
-    elif time == -2:
-        await ctx.send(f"`the time must be a whole number please enter the number as a whole!`")
-        return
-    prize = answers[2]
-    await ctx.send(f"**the Giveaway will be in {channel.mention} and will last for {answers[1]}")
-    embed = discord.Embed(title = "Giveaway!",description = f"{prize}",color = ctx.author.color)
-    embed.add_field(name = "Hosted by:",value = ctx.author.mention)
-    embed.set_footer(text = f"Ends {answers[1]} from now!")
-    my_msg = await channel.send(embed = embed)
-    
-    await my_msg.add_reaction("🎉")
-    await asyncio.sleep(time)
-    
-    new_msg = await ctx.channel.fetch_message(my_msg.id)
-    
-    users = await new_msg.reactions[0].users().flatten()
-    users.pop(users.index(bot.user))
-    
-    winner = random.choice(users)
-    await channel.send(f"Congratulations!! {winner.mention} won {prize}")
+
 
 #############################################################################################################
     
     
-@bot.command()
-@commands.has_permissions(manage_channels= True)
-async def reroll(ctx,channel : discord.TextChannel, id_ : int,prize:str):
-    try: 
-        new_msg = await channel.fetch_message(id_)
-    except: 
-        await ctx.send("`the id entered incorrectly!`")
-        return
-    users = await new_msg.reactions[0].users().flatten()
-    users.pop(users.index(bot.user))
-    
-    winner = random.choice(users)
-    await channel.send(f"Congratulations!! {winner.mention} won {prize}")
+
 
 #############################################################################################################
 
@@ -269,7 +195,23 @@ async def balance(ctx):
     await ctx.send(embed = embed)
     
 #############################################################################################################
-
+@bot.command()
+async def mute(ctx, member: discord.Member):
+  guild = ctx.guild
+  if discord.utils.get(ctx.guild.roles,name = "Muted"):
+    await ctx.send("Mute role already exists!")
+    var = discord.utils.get(ctx.guild.roles,name = "Muted")
+    for channel in guild.channels:
+        await channel.set_permissions(var, speak=False, send_messages=False)
+        await member.add_roles(var)
+  else:
+    await guild.create_role(name = "Muted",color = discord.Color(0x0062ff))
+    var = discord.utils.get(ctx.guild.roles,name = "Muted")
+    for channel in guild.channels:
+        await channel.set_permissions(var, speak=False, send_messages=False)
+        await ctx.send("Muted role created!")
+    await member.add_roles(var)
+    
 
  
 ############################################################################################################# 
@@ -365,22 +307,17 @@ async  def on_message(message):
 #############################################################################################################    
     
     
-@bot.event 
-async  def on_error(event , *args , **kwargs):
-    with open("err.log" , 'a') as f:
-        if event == "on_message":
-            f.write(f"Unhandled message: {args[0]}\n")
-        else:
-            raise 
+# @bot.event 
+# async  def on_error(event , *args , **kwargs):
+#     with open("err.log" , 'a') as f:
+#         if event == "on_message":
+#             f.write(f"Unhandled message: {args[0]}\n")
+#         else:
+#             raise 
   
 #############################################################################################################  
     
-@bot.command(name = "roll",help = "rolls dice")
-async def roll(ctx, number_of_dice : int,number_of_sides:int):
-    dice = [str(random.choice(range(1,number_of_sides+1))) 
-            for _ in range(number_of_dice)
-    ]
-    await ctx.send(', '.join(dice))
+
 
 #############################################################################################################
         
@@ -439,89 +376,29 @@ async def unban(ctx, * , member):
 
 #############################################################################################################
 
-@bot.event
-async  def on_command_error(ctx,error):
-    try:
-        if isinstance(error,commands.errors.CheckFailure):
-                await ctx.send("You dont have permission to do that! XD")
-        elif isinstance(error , commands.CommandNotFound):
-            await ctx.send("This command do not exist use `noah help` to see the commands available")
-    except discord.errors.Forbidden:
-        await ctx.send("Make sure I have the following permissions: `Manage Messages`, `Read Message History`, "
-                       "`Add Reactions`, `Mute Members`")
+# @bot.event
+# async  def on_command_error(ctx,error):
+#     try:
+#         if isinstance(error,commands.errors.CheckFailure):
+#                 await ctx.send("You dont have permission to do that! XD")
+#         elif isinstance(error , commands.CommandNotFound):
+#             await ctx.send("This command do not exist use `noah help` to see the commands available")
+#     except discord.errors.Forbidden:
+#         await ctx.send("Make sure I have the following permissions: `Manage Messages`, `Read Message History`, "
+#                        "`Add Reactions`, `Mute Members`")
 
 
 #############################################################################################################        
     
-@bot.command()
-async def wanted(ctx,user:discord.Member = None):
-    if user == None:
-        user = ctx.author
-        await ctx.send("you didnt mention anyone, so you are the one who is wanted now!! XD")
-    wanted = Image.open("Images/wanted.jpg")
-    asset = user.avatar_url_as(size = 128)
-    data = BytesIO(await asset.read())
-    profile = Image.open(data)
-    profile = profile.resize((244,242))
-    wanted.paste(profile,(76,193))
-    wanted.save("profile.jpg")
-    
-    await ctx.send(file = discord.File("profile.jpg"))
+
 
 #############################################################################################################
     
-@bot.command()
-async def slap(ctx,user:discord.Member = None):
-    if user == None:
-        await ctx.send("Mention anyone to slap")
-    else:
-        slap = Image.open("Images/slap.jpg")
-        
-        asset = user.avatar_url_as(size = 128)
-        assets = ctx.author.avatar_url_as(size = 128)
-        
-        
-        
-        data = BytesIO(await asset.read())
-        datas = BytesIO(await assets.read())
-        
-        profile = Image.open(data)
-        profiles = Image.open(datas)
-        profile = profile.resize((210,246))
-        profiles = profiles.resize((151,204))
-        slap.paste(profiles,(388,222))
-        slap.paste(profile,(123,304))
-        slap.save("profile.jpg")
-        await ctx.send(file = discord.File("profile.jpg"))
+
         
 #############################################################################################################
 
-@bot.command()
-async def dead(ctx,user:discord.Member = None):
-    if user == None:
-        await ctx.send("Mention anyone to slap")
-    else:
-        slap = Image.open("Images/deadlol.jpg")
-        
-        asset = user.avatar_url_as(size = 128)
-        assets = ctx.author.avatar_url_as(size = 128)
-        
-        
-        
-        data = BytesIO(await asset.read())
-        datas = BytesIO(await assets.read())
-        
-        profile = Image.open(data)
-        profiles = Image.open(datas)
-        
-        profile = profile.resize((68,62))
-        profiles = profiles.resize((50,43))
-        
-        slap.paste(profiles,(139,94))
-        slap.paste(profile,(41,66))
-        
-        slap.save("profile.jpg")
-        await ctx.send(file = discord.File("profile.jpg"))
+
 
 #############################################################################################################
         
@@ -530,9 +407,14 @@ async def dead(ctx,user:discord.Member = None):
 async def kick(ctx, member : discord.Member, *, reason=None):
   await member.kick(reason=reason)
     
+@bot.command()
+@commands.has_permissions(kick_members=True)
+async def warn(ctx, member : discord.Member, *, reason='placeholder'):
+    await ctx.send(member.mention + ' has been warned for the reason of ' + reason)
+    await member.send('You were warned in {} with the reason of {}'.format(ctx.guild.name, reason))
+    
+  
 
-    
-    
 
     
     
