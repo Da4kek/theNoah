@@ -11,6 +11,9 @@ import datetime
 import mysql.connector
 import DiscordUtils
 import praw
+import apraw
+
+
 
 def get_prefix(client,message):
     
@@ -18,8 +21,9 @@ def get_prefix(client,message):
         prefixes = json.load(f)
 
     return prefixes[str(message.guild.id)]
-
-bot = commands.Bot(command_prefix = get_prefix)
+intents = discord.Intents.all()
+intents.members = True
+bot = commands.Bot(command_prefix = get_prefix,intents = intents)
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -27,11 +31,7 @@ PREFIX = os.getenv('DISCORD_PREFIX')
 
 
 bot.remove_command("help") 
-reddit = praw.Reddit(client_id = "5T3myV5BQSWmvQ",
-                     client_secret = "j2NeTcoFNEYyV6hCp6erdk1h3cO7vQ",
-                     username = "nocopyrights101",
-                     password = "Myindian@123",
-                     user_agent = "NoahBot")
+
 
 os.chdir("C:\\Users\\anisr\\OneDrive\\Desktop\\NoahBot\\")
 
@@ -113,46 +113,8 @@ async def changeprefix(ctx, prefix):
         json.dump(prefixes,f)    
 
     await ctx.send(f"The prefix was changed to {prefix}")
+    await ctx.guild.me.edit(nick=f'[{prefix}] Noahbot')
 
-#############################################################################################################
-
-
-
-@bot.command()
-async def meme(ctx,subred = 'memes'):
-    subreddit = reddit.subreddit(subred)
-    all_submission =[]
-    
-    top = subreddit.top(limit = 50)
-    for submission in top:
-        all_submission.append(submission)
-    random_sub = random.choice(all_submission)
-    name = random_sub.title
-    url = random_sub.url
-    embed = discord.Embed(title = name)
-    embed.set_image(url = url)
-    await ctx.send(embed = embed)    
-
-#############################################################################################################
-    
-@bot.command()
-async def subreddit(ctx,subred = None):
-    if(subred == None):
-        await ctx.send("Enter the subreddit's name and try again")
-    else:
-    
-        subreddit = reddit.subreddit(subred)
-        all_submission =[]
-        
-        top = subreddit.top(limit = 50)
-        for submission in top:
-            all_submission.append(submission)
-        random_sub = random.choice(all_submission)
-        name = random_sub.title
-        url = random_sub.url
-        embed = discord.Embed(title = name)
-        embed.set_image(url = url)
-        await ctx.send(embed = embed)    
 
 #############################################################################################################        
 
@@ -165,22 +127,6 @@ filtered_words = ['fuck','FUCK','fck','sex','pussy','mf','motherfucker','bitch',
     
 #############################################################################################################    
 
-
-
-
-
-
-
-#############################################################################################################
-    
-
-
-#############################################################################################################
-    
-    
-
-
-#############################################################################################################
 
 @bot.command()
 async def balance(ctx):
@@ -315,8 +261,6 @@ async  def on_message(message):
 #         else:
 #             raise 
   
-#############################################################################################################  
-    
 
 
 #############################################################################################################
@@ -392,15 +336,15 @@ async def unban(ctx, * , member):
     
 
 
-#############################################################################################################
+
     
 
         
-#############################################################################################################
 
 
 
-#############################################################################################################
+
+
         
 @bot.command()
 @commands.has_permissions(kick_members=True)
