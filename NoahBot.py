@@ -8,10 +8,11 @@ import asyncio
 from PIL import Image,ImageFont,ImageDraw
 from io import BytesIO
 import datetime
-import mysql.connector
 import DiscordUtils
 import praw
 import apraw
+import jishaku
+import aiohttp
 
 
 
@@ -24,7 +25,7 @@ def get_prefix(client,message):
 intents = discord.Intents.all()
 intents.members = True
 bot = commands.Bot(command_prefix = get_prefix,intents = intents)
-
+clinet = discord.Client()
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 PREFIX = os.getenv('DISCORD_PREFIX')
@@ -33,17 +34,18 @@ PREFIX = os.getenv('DISCORD_PREFIX')
 bot.remove_command("help") 
 
 
-os.chdir("C:\\Users\\anisr\\OneDrive\\Desktop\\NoahBot\\")
 
 @bot.command()
 async def load(ctx,extension):
     bot.load_extension(f'Cogs.{extension}')
-    ctx.channel.send("Cogs loaded")
+    await ctx.channel.send("Cogs loaded")
     
 @bot.command()
 async def unload(ctx,extension):
     bot.unload_extension(f'Cogs.{extension}')
-    ctx.channel.send("Cogs unloaded")
+    await ctx.channel.send("Cogs unloaded")
+
+bot.load_extension('jishaku')
 
 for filename in os.listdir("./Cogs"):
     if filename.endswith(".py"):
@@ -67,7 +69,32 @@ async def get_bank_data():
         users = json.load(f)
     return users 
     
+async def update_bank(user,change=0,mode = "wallet"):
+    users = await get_bank_data()
+    users[str(user.id)][mode] +=change
+    with open("mainbank.json",'w') as f:
+        json.dump(users,f)
 
+    bal = [users[str(user.id)]["wallet"],users[str(user.id)]["bank"]]
+    return user
+
+@bot.command()
+async def withdraw(ctx,amount = None):
+    await open_account(ctx.author)
+    if amount ==None:
+        await ctx.send("Please enter the amount!")
+        return
+    bal = await update_bank(ctx.author)
+    amount = int(amount)
+    if amount > bal[1]:
+        await ctx.send("You dont have enough credits")
+        return
+    if amount < 0:
+        await ctx.send("Amount cannot be negative noob")
+        return
+    await update_bank(ctx.author,amount,amount)
+    await update_bank(ctx.author,amount,-1*amount,"bank")
+    await ctx.send(f"You withdrew {amount} noahcoins")
 
 async def open_account(user):
     users = await get_bank_data()
@@ -99,29 +126,13 @@ async def on_guild_join(guild):
         json.dump(prefixes,f)
 
 #############################################################################################################
-        
-@bot.command()
-@commands.has_permissions(administrator = True)
-async def changeprefix(ctx, prefix):
+     
 
-    with open("prefixes.json", "r") as f:
-        prefixes = json.load(f)
-
-    prefixes[str(ctx.guild.id)] = prefix
-
-    with open("prefixes.json", "w") as f:
-        json.dump(prefixes,f)    
-
-    await ctx.send(f"The prefix was changed to {prefix}")
-    await ctx.guild.me.edit(nick=f'[{prefix}] Noahbot')
 
 
 #############################################################################################################        
 
-@bot.command()
-@commands.has_permissions(manage_channels =True)
-async def purge(ctx,amount = 5):
-    await ctx.channel.purge(limit = amount)
+
     
 filtered_words = ['fuck','FUCK','fck','sex','pussy','mf','motherfucker','bitch','ass','ASS','thefuck','wtf','WTF']
     
@@ -141,22 +152,7 @@ async def balance(ctx):
     await ctx.send(embed = embed)
     
 #############################################################################################################
-@bot.command()
-async def mute(ctx, member: discord.Member):
-  guild = ctx.guild
-  if discord.utils.get(ctx.guild.roles,name = "Muted"):
-    await ctx.send("Mute role already exists!")
-    var = discord.utils.get(ctx.guild.roles,name = "Muted")
-    for channel in guild.channels:
-        await channel.set_permissions(var, speak=False, send_messages=False)
-        await member.add_roles(var)
-  else:
-    await guild.create_role(name = "Muted",color = discord.Color(0x0062ff))
-    var = discord.utils.get(ctx.guild.roles,name = "Muted")
-    for channel in guild.channels:
-        await channel.set_permissions(var, speak=False, send_messages=False)
-        await ctx.send("Muted role created!")
-    await member.add_roles(var)
+
     
 
  
@@ -182,19 +178,21 @@ async def on_ready():
         print(f"{guild.name}(id: {guild.id})")
     members = '\n - '.join([member.name for member in guild.members])
     print(f'Guild members:\n -  {members}')
-    await bot.change_presence(activity=discord.Game(name = "playing on {} servers".format(len(bot.guilds))))
+    await bot.change_presence(activity=discord.Game(name = "on {} servers".format(len(bot.guilds))))
     await bot.change_presence(activity = discord.Streaming(name = "Streaming",url = "https://twitch.com"))
     await bot.change_presence(activity=discord.Activity(type = discord.ActivityType.listening,name = "Noah"))
     await bot.change_presence(activity = discord.Activity(type = discord.ActivityType.watching,name = "How was Noah made"))
     
 async def change_presence():
     await bot.wait_until_ready()
-    status = ['Noah',f'on {len(bot.guilds)} servers | noah help','discord.py']
+    statuses = ['Noah',f'on {len(bot.guilds)} servers | noah help','discord.py']
     while not bot.is_closed():
-        status = random.choice(status)
+        status = random.choice(statuses)
         
         await bot.change_presence(activity=discord.Game(name = status))
-        await asyncio.sleep(30)
+
+
+        await asyncio.sleep(10)
 bot.loop.create_task(change_presence())
         
     
@@ -212,30 +210,30 @@ async  def on_member_join(member):
     
 @bot.event
 async  def on_message(message):
-    if message.author == bot.user:
-        return
-    sample_texts = ["Hello whatsup ??","you like me??","am developing!! and not developed!","how are you?","lol :D","am i joke to you?","-_-","you can lol"]
-    if message.content == "hello":
-        await message.channel.send(sample_texts[0])
-    elif message.content == "you are dumb" or message.content == "you suck":
-        await message.channel.send(sample_texts[2])
-    elif message.content == "nice" or message.content =="noice":
-        await message.channel.send(sample_texts[1])
-    elif message.content == "no" or message.content == "nah":
-        await message.channel.send("https://cdn.discordapp.com/emojis/790122638470676510.png?v=1")
-    elif message.content == "ok" or message.content == "okay":
-        await message.channel.send("https://cdn.discordapp.com/emojis/790123077396594688.png?v=1")
-    responses = random.choice(sample_texts)
-    if message.content == "lol" or message.content == "lmao":
-        await message.channel.send(responses)
+    # if message.author == bot.user:
+    #     return
+    # sample_texts = ["Hello whatsup ??","you like me??","am developing!! and not developed!","how are you?","lol :D","am i joke to you?","-_-","you can lol"]
+    # if message.content == "hello":
+    #     await message.channel.send(sample_texts[0])
+    # elif message.content == "you are dumb" or message.content == "you suck":
+    #     await message.channel.send(sample_texts[2])
+    # elif message.content == "nice" or message.content =="noice":
+    #     await message.channel.send(sample_texts[1])
+    # elif message.content == "no" or message.content == "nah":
+    #     await message.channel.send("https://cdn.discordapp.com/emojis/790122638470676510.png?v=1")
+    # elif message.content == "ok" or message.content == "okay":
+    #     await message.channel.send("https://cdn.discordapp.com/emojis/790123077396594688.png?v=1")
+    # responses = random.choice(sample_texts)
+    # if message.content == "lol" or message.content == "lmao":
+    #     await message.channel.send(responses)
     
-    for word in filtered_words:
-        if word in message.content  :
-            await message.delete()
-            await message.channel.send(f"Stop using that word again {message.author.mention}")
+    # for word in filtered_words:
+    #     if word in message.content  :
+    #         await message.delete()
+    #         await message.channel.send(f"Stop using that word again {message.author.mention}")
             
     try:
-        if message.mentions[0] == bot.user:
+        if message.content == '<@!796735541101854740>':
 
             with open("prefixes.json", "r") as f:
                 prefixes = json.load(f)
@@ -264,58 +262,22 @@ async  def on_message(message):
 
 
 #############################################################################################################
-        
 @bot.command()
-async def deletechannel(ctx,channel:discord.TextChannel):
-    embed = discord.Embed(
-        title = "Success",
-        description = f"Channel:{channel} has been deleted"
-    )
-    if ctx.author.guild_permissions.manage_channels == True:
-        await ctx.send(embed = embed)
-        await channel.delete()
-    else:
-        await ctx.send("you cannot delete a channel get perms noob!")
+async def allcommands(ctx):
+    await ctx.send(len(bot.commands))      
+
 
 #############################################################################################################
         
-@bot.command()
-async def createchannel(ctx , channel):
-    guild = ctx.guild
-    embed = discord.Embed(
-        title = "Success",
-        description = f"Channel:{channel} has been created"
-    )
-    if ctx.author.guild_permissions.manage_channels == True:
-        await guild.create_text_channel(name ='{}'.format(channel))
-        await ctx.send(embed=embed)
-    else:
-        await ctx.send("you cannot create a channel get perms noob!")
+
 
 #############################################################################################################
 
-@bot.command()
-@commands.has_permissions(ban_members = True)
-async def ban(ctx,member: discord.Member ,*,reason = " No reason Provided just banned lol"):
-    await ctx.send(member.name + f" has been banned for: `{reason}`")
-    await member.create_dm()
-    await member.dm_channel.send(f"You have been banned for `{reason}`")
-    await member.ban(reason = reason)
+
         
 #############################################################################################################
     
-@bot.command()
-@commands.has_permissions(ban_members = True)
-async def unban(ctx, * , member):
-    banned_users = await ctx.guild.bans()
-    member_name,member_disc = member.split("#")
-    for banned_entry in banned_users:
-        user = banned_entry.user
-        if(user.name,user.discriminator) == (member_name,member_disc):
-            await ctx.guild.unban(user)
-            await ctx.send(member_name + " has been unbanned XD!")
-            return
-    await ctx.send(member+ " was not found! **disappeared??**")
+
     
 
 #############################################################################################################
@@ -346,16 +308,7 @@ async def unban(ctx, * , member):
 
 
         
-@bot.command()
-@commands.has_permissions(kick_members=True)
-async def kick(ctx, member : discord.Member, *, reason=None):
-  await member.kick(reason=reason)
-    
-@bot.command()
-@commands.has_permissions(kick_members=True)
-async def warn(ctx, member : discord.Member, *, reason='placeholder'):
-    await ctx.send(member.mention + ' has been warned for the reason of ' + reason)
-    await member.send('You were warned in {} with the reason of {}'.format(ctx.guild.name, reason))
+
     
   
 

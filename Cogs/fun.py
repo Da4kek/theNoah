@@ -32,9 +32,7 @@ class fun(commands.Cog):
         await ctx.send('You Rolled: \n`' + (', '.join(a)) + '`')  
         
         
-    @commands.command()
-    async def allcommands(self,ctx):
-        await ctx.send(len(bot.commands))
+
         
         
     @commands.command()
@@ -84,7 +82,9 @@ class fun(commands.Cog):
 
                 else:
                     await ctx.send(f"API returned a {response.status} status.")
-            
+    @commands.command()
+    async def searchdocs(self,ctx,search: str):
+        url = f''      
                 
 
 

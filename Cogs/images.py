@@ -5,6 +5,7 @@ import DiscordUtils
 import random
 from PIL import Image,ImageFont,ImageDraw
 from io import BytesIO
+import typing
 
 class images(commands.Cog):
     def __init__(self,bot):
@@ -23,8 +24,8 @@ class images(commands.Cog):
         asset = user.avatar_url_as(size = 128)
         data = BytesIO(await asset.read())
         profile = Image.open(data)
-        profile = profile.resize((244,242))
-        wanted.paste(profile,(76,193))
+        profile = profile.resize((374,278))
+        wanted.paste(profile,(47,232))
         wanted.save("profile.jpg")
         
         await ctx.send(file = discord.File("profile.jpg"))
@@ -54,7 +55,7 @@ class images(commands.Cog):
     @commands.command()
     async def dead(self,ctx,user:discord.Member = None):
         if user == None:
-            await ctx.send("Mention anyone to slap")
+            await ctx.send("Mention anyone,they are dead")
         else:
             slap = Image.open("Images\deadlol.jpg")
             
@@ -77,6 +78,28 @@ class images(commands.Cog):
             
             slap.save("profile.jpg")
             await ctx.send(file = discord.File("profile.jpg"))
+    @commands.command()
+    async def shut(self,ctx,user:discord.Member = None):
+        if user == None:
+            await ctx.send("Mention anyone to shut")
+        else:
+            shut = Image.open("Images\Shut.png")
+            
+            asset = user.avatar_url_as(size = 128)
+            
+            
+            
+            data = BytesIO(await asset.read())
+            
+            profile = Image.open(data)
+            
+            profile = profile.resize((188,196))
+            
+            shut.paste(profile,(234,188))
+            
+            shut.save("profile.jpg")
+            await ctx.send(file = discord.File("profile.jpg"))
+
 
 def setup(bot):
     bot.add_cog(images(bot))

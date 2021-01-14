@@ -1,60 +1,87 @@
-import discord
-from discord.ext import commands
-import DiscordUtils
-import paginator
+from typing import Optional
 
-class help(commands.Cog):
-    
-    def __init__(self,bot):
-        self.bot = bot
-    @commands.Cog.listener()    
-    async def on_ready(self):
-        print('help command loaded')
-        
-    
-    @commands.command()
-    async def help(self , ctx):
-        embed1 = discord.Embed(color=ctx.author.color).add_field(name="**Moderations**",value = None)
-        embed1.add_field(name = 'createchannel',value = 'creates a channel for you')
-        embed1.add_field(name = 'deletechannel',value ='deletes a channel (give the name/id/mention the channel)')
-        embed1.add_field(name = 'kick',value = 'kicks the member whom you mention')
-        embed1.add_field(name = 'ban',value = 'bans the member whom you mention and wont allow him to join again unless unbanned')
-        embed1.add_field(name = 'unban',value = 'unbans the member(give me the username with the code of the banned member)')
-        embed1.add_field(name = 'mute',value = 'Mutes the person')
-        embed1.add_field(name = 'unmute',value = 'coming soon!')
-        embed1.add_field(name = 'warn',value = 'warns a person! in their dm')
-        
-        embed2 = discord.Embed(color=ctx.author.color).add_field(name="**Fun**",value = None)
-        embed2.add_field(name = 'slap',value = 'mention a member to slap')
-        embed2.add_field(name = 'dead',value = 'mention a member, and he is dead with your smile lol')
-        embed2.add_field(name = 'wanted',value = 'mention a member whom you wanted to see him most wanted')
-        embed2.add_field(name = 'roll',value='give me the sides and number of dices to use ;)')
-        embed2.add_field(name = 'kill',value = 'mention a member and they are dead(dont formet to mention the reason too)')
-        embed2.add_field(name = 'count',value = 'just count give me the limit too')
-        embed2.add_field(name = 'allcommands',value = 'shows the number of commands!')
-        
-        embed3 = discord.Embed(color=ctx.author.color).add_field(name="**Giveaway**",value = None)
-        embed3.add_field(name = 'giveaway',value = "start a giveaway with some basic questions (be legit!)")
-        
-        embed4 = discord.Embed(color=ctx.author.color).add_field(name="**economy**",value = None)
-        embed4.add_field(name='balance',value = 'to see how much do you have')
-        embed4.add_field(name = 'beg',value = 'beg to get noacoins')
-        embed4.add_field(name = 'shops',value = 'coming soon!')
-        paginator = DiscordUtils.Pagination.CustomEmbedPaginator(ctx, remove_reactions=True)
-        paginator.add_reaction('⏮️', "first")
-        paginator.add_reaction('⏪', "back")
-        paginator.add_reaction('🔐', "lock")
-        paginator.add_reaction('⏩', "next")
-        paginator.add_reaction('⏭️', "last")
-        embeds = [embed1, embed2, embed3,embed4]
-        await paginator.run(embeds)
-    
-    
-    
-        
-        
+from discord import Embed
+from discord.utils import get
+from discord.ext.menus import MenuPages, ListPageSource
+from discord.ext.commands import Cog
+from discord.ext.commands import command
+
+
+def syntax(command):
+	cmd_and_aliases = "|".join([str(command), *command.aliases])
+	params = []
+
+	for key, value in command.params.items():
+		if key not in ("self", "ctx"):
+			params.append(f"[{key}]" if "NoneType" in str(value) else f"<{key}>")
+
+	params = " ".join(params)
+
+	return f"`{cmd_and_aliases} {params}`"
+
+
+class HelpMenu(ListPageSource):
+	def __init__(self, ctx, data):
+		self.ctx = ctx
+
+		super().__init__(data, per_page=3)
+
+	async def write_page(self, menu, fields=[]):
+		offset = (menu.current_page*self.per_page) + 1
+		len_data = len(self.entries)
+
+		embed = Embed(title="Help",
+					  description="Commands that you can access",
+					  colour=self.ctx.author.colour)
+		embed.set_thumbnail(url=self.ctx.guild.me.avatar_url)
+		embed.set_footer(text=f"{offset:,} - {min(len_data, offset+self.per_page-1):,} of {len_data:,} commands.")
+
+		for name, value in fields:
+			embed.add_field(name=name, value=value, inline=False)
+
+		return embed
+
+	async def format_page(self, menu, entries):
+		fields = []
+
+		for entry in entries:
+			fields.append((entry.brief or "No Description", syntax(entry)))
+
+		return await self.write_page(menu, fields)
+
+
+class Help(Cog):
+	def __init__(self, bot):
+		self.bot = bot
+		self.bot.remove_command("help")
+
+	async def cmd_help(self, ctx, command):
+		embed = Embed(title=f"Help with `{command}`",
+					  description=syntax(command),
+					  colour=ctx.author.colour)
+		embed.add_field(name="Command description", value=command.help)
+		await ctx.send(embed=embed)
+
+	@command(name="help")
+	async def show_help(self, ctx, cmd: Optional[str]):
+		"""Shows this message."""
+		if cmd is None:
+			menu = MenuPages(source=HelpMenu(ctx, list(self.bot.commands)),
+							 delete_message_after=True,
+							 timeout=60.0)
+			await menu.start(ctx)
+
+		else:
+			if (command := get(self.bot.commands, name=cmd)):
+				await self.cmd_help(ctx, command)
+
+			else:
+				await ctx.send("**Command error**: `command not found`")
+
+	@Cog.listener()
+	async def on_ready(self):
+		print("help loaded")
+
+
 def setup(bot):
-    bot.add_cog(help(bot))
-    
-        
-        
+	bot.add_cog(Help(bot))
