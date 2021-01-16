@@ -17,10 +17,8 @@ import aiohttp
 
 
 def get_prefix(client,message):
-    
     with open("prefixes.json", "r") as f:
         prefixes = json.load(f)
-
     return prefixes[str(message.guild.id)]
 intents = discord.Intents.all()
 intents.members = True
@@ -29,21 +27,18 @@ clinet = discord.Client()
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 PREFIX = os.getenv('DISCORD_PREFIX')
-
-
 bot.remove_command("help") 
-
-
-
+    
 @bot.command()
 async def load(ctx,extension):
     bot.load_extension(f'Cogs.{extension}')
     await ctx.channel.send("Cogs loaded")
-    
+
 @bot.command()
 async def unload(ctx,extension):
     bot.unload_extension(f'Cogs.{extension}')
     await ctx.channel.send("Cogs unloaded")
+
 
 bot.load_extension('jishaku')
 
@@ -55,7 +50,6 @@ def convert(time):
     pos = ['s','m','h','d']
     time_dict = {"s":1,"m":60,"h":3600,"d":3600*24}
     unit = time[-1]
-    
     if unit not in pos:
         return -1
     try:
@@ -74,7 +68,6 @@ async def update_bank(user,change=0,mode = "wallet"):
     users[str(user.id)][mode] +=change
     with open("mainbank.json",'w') as f:
         json.dump(users,f)
-
     bal = [users[str(user.id)]["wallet"],users[str(user.id)]["bank"]]
     return user
 
@@ -108,36 +101,14 @@ async def open_account(user):
     with open("mainbank.json",'r+') as f:
         json.dump(users,f)
     return True
-
-
-
-#############################################################################################################
-
+    
 @bot.event
 async def on_guild_join(guild):
-
-
     with open("prefixes.json", "r") as f:
         prefixes = json.load(f)
-
     prefixes[str(guild.id)] = "noah"
-
     with open("prefixes.json", "w") as f:
         json.dump(prefixes,f)
-
-#############################################################################################################
-     
-
-
-
-#############################################################################################################        
-
-
-    
-filtered_words = ['fuck','FUCK','fck','sex','pussy','mf','motherfucker','bitch','ass','ASS','thefuck','wtf','WTF']
-    
-#############################################################################################################    
-
 
 @bot.command()
 async def balance(ctx):
@@ -150,27 +121,18 @@ async def balance(ctx):
     embed.add_field(name = "Wallet balance",value = wallet_amt)
     embed.add_field(name = "Bank balance",value = bank_amt)
     await ctx.send(embed = embed)
-    
-#############################################################################################################
 
-    
-
- 
-############################################################################################################# 
-    
 @bot.command()
 async def beg(ctx):
     await open_account(ctx.author)
     users = await get_bank_data()
     user = ctx.author
-
     earnings = random.randrange(101)
     await ctx.send(f"**Someone gave you {earnings} noacoins!**")
     users[str(user.id)]['wallet'] += earnings
     with open("mainbank.json",'w') as f:
         users = json.dump(users,f)
-    
-#############################################################################################################    
+
 @bot.event
 async def on_ready():
     for guild in bot.guilds:
@@ -188,69 +150,35 @@ async def change_presence():
     statuses = ['Noah',f'on {len(bot.guilds)} servers | noah help','discord.py']
     while not bot.is_closed():
         status = random.choice(statuses)
-        
         await bot.change_presence(activity=discord.Game(name = status))
-
-
         await asyncio.sleep(10)
 bot.loop.create_task(change_presence())
-        
-    
- #############################################################################################################   
-    
-    
+
 @bot.event
 async  def on_member_join(member):
     channel = bot.get_all_channels()
     await channel.send(f"Welcome {member}! to {member.guild.name}!!")
     await member.create_dm()
     await member.dm_channel.send(f"Hi {member.name}, welcome to the {bot.guild.name} server!!")
-    
-#############################################################################################################    
-    
+
 @bot.event
 async  def on_message(message):
-    # if message.author == bot.user:
-    #     return
-    # sample_texts = ["Hello whatsup ??","you like me??","am developing!! and not developed!","how are you?","lol :D","am i joke to you?","-_-","you can lol"]
-    # if message.content == "hello":
-    #     await message.channel.send(sample_texts[0])
-    # elif message.content == "you are dumb" or message.content == "you suck":
-    #     await message.channel.send(sample_texts[2])
-    # elif message.content == "nice" or message.content =="noice":
-    #     await message.channel.send(sample_texts[1])
-    # elif message.content == "no" or message.content == "nah":
-    #     await message.channel.send("https://cdn.discordapp.com/emojis/790122638470676510.png?v=1")
-    # elif message.content == "ok" or message.content == "okay":
-    #     await message.channel.send("https://cdn.discordapp.com/emojis/790123077396594688.png?v=1")
-    # responses = random.choice(sample_texts)
-    # if message.content == "lol" or message.content == "lmao":
-    #     await message.channel.send(responses)
-    
-    # for word in filtered_words:
-    #     if word in message.content  :
-    #         await message.delete()
-    #         await message.channel.send(f"Stop using that word again {message.author.mention}")
-            
     try:
         if message.content == '<@!796735541101854740>':
-
             with open("prefixes.json", "r") as f:
                 prefixes = json.load(f)
-
             pre = prefixes[str(message.guild.id)] 
-
             await message.channel.send(f"My prefix for this server is {pre}")
-
     except:
         pass
     
     await bot.process_commands(message)
-        
-    
-#############################################################################################################    
-    
-    
+
+@bot.command()
+async def allcommands(ctx):
+    await ctx.send(len(bot.commands))      
+
+
 # @bot.event 
 # async  def on_error(event , *args , **kwargs):
 #     with open("err.log" , 'a') as f:
@@ -258,30 +186,7 @@ async  def on_message(message):
 #             f.write(f"Unhandled message: {args[0]}\n")
 #         else:
 #             raise 
-  
-
-
-#############################################################################################################
-@bot.command()
-async def allcommands(ctx):
-    await ctx.send(len(bot.commands))      
-
-
-#############################################################################################################
-        
-
-
-#############################################################################################################
-
-
-        
-#############################################################################################################
     
-
-    
-
-#############################################################################################################
-
 # @bot.event
 # async  def on_command_error(ctx,error):
 #     try:
@@ -294,25 +199,4 @@ async def allcommands(ctx):
 #                        "`Add Reactions`, `Mute Members`")
 
 
-#############################################################################################################        
-    
-
-
-
-    
-
-        
-
-
-
-
-
-        
-
-    
-  
-
-
-    
-    
-bot.run(TOKEN)
+bot.run(TOKEN)  
