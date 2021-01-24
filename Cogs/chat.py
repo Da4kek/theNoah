@@ -42,7 +42,7 @@ class Chatbot(commands.Cog):
                     await ctx.send(embed = embed)
                 else:
                     embed = discord.Embed(description = item, color = (0xF48D1))
-                    embed.set_footer(text = "Page {}".format(num))
+                    embed.set_footer(text = "Page #{}".format(num))
                     await ctx.send(embed = embed)
 
 def setup(bot):
