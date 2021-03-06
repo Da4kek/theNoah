@@ -2,7 +2,7 @@
 
 Fully functional discord bot 
 
-##Why use it ? 
+## Why use it ? 
 
 fully loaded moderations and fun stuff 
 
